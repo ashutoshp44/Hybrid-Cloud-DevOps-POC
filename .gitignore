@@ -19,3 +19,9 @@ override.tf.json
 # OS files
 .DS_Store
 Thumbs.db
+.terraform/
+*.tfstate
+*.tfstate.*
+*.pem
+*.key
+terraform.tfvars
