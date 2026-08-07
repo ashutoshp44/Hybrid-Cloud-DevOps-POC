@@ -1,0 +1,44 @@
+$Report = "C:\Scripts\health_report.txt"
+
+"=====================================" | Out-File $Report
+"Windows Server Health Report" | Out-File $Report -Append
+"Generated On: $(Get-Date)" | Out-File $Report -Append
+"=====================================" | Out-File $Report -Append
+"" | Out-File $Report -Append
+
+"Computer Name:" | Out-File $Report -Append
+hostname | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"Operating System:" | Out-File $Report -Append
+Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"System Uptime:" | Out-File $Report -Append
+(Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"Disk Usage:" | Out-File $Report -Append
+Get-PSDrive -PSProvider FileSystem | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"Running Services:" | Out-File $Report -Append
+Get-Service | Where-Object {$_.Status -eq "Running"} | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"Top 10 System Event Logs:" | Out-File $Report -Append
+Get-EventLog -LogName System -Newest 10 | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"CPU Information:" | Out-File $Report -Append
+Get-CimInstance Win32_Processor | Select-Object Name, LoadPercentage | Out-File $Report -Append
+
+"" | Out-File $Report -Append
+"Memory Information:" | Out-File $Report -Append
+Get-CimInstance Win32_OperatingSystem |
+Select-Object `
+@{Name="TotalMemoryGB";Expression={[math]::Round($_.TotalVisibleMemorySize/1MB,2)}},
+@{Name="FreeMemoryGB";Expression={[math]::Round($_.FreePhysicalMemory/1MB,2)}} |
+Out-File $Report -Append
+
+Write-Host "Health report generated successfully."

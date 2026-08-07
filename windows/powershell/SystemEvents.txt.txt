@@ -1,0 +1,52 @@
+
+
+   ProviderName: Service Control Manager
+
+TimeCreated                      Id LevelDisplayName Message                                                           
+-----------                      -- ---------------- -------                                                           
+8/7/2026 10:43:30 AM           7036 Information      The Windows Update service entered the stopped state.             
+8/7/2026 10:39:42 AM           7036 Information      The AppX Deployment Service (AppXSVC) service entered the stopp...
+8/7/2026 10:39:42 AM           7036 Information      The Client License Service (ClipSVC) service entered the stoppe...
+8/7/2026 10:38:25 AM           7036 Information      The App Readiness service entered the stopped state.              
+8/7/2026 10:34:46 AM           7036 Information      The Microsoft Software Shadow Copy Provider service entered the...
+8/7/2026 10:34:41 AM           7036 Information      The Client License Service (ClipSVC) service entered the runnin...
+8/7/2026 10:33:34 AM           7036 Information      The Software Protection service entered the stopped state.        
+
+
+   ProviderName: Microsoft-Windows-WindowsUpdateClient
+
+TimeCreated                      Id LevelDisplayName Message                                                           
+-----------                      -- ---------------- -------                                                           
+8/7/2026 10:33:28 AM             19 Information      Installation Successful: Windows successfully installed the fol...
+
+
+   ProviderName: Service Control Manager
+
+TimeCreated                      Id LevelDisplayName Message                                                           
+-----------                      -- ---------------- -------                                                           
+8/7/2026 10:33:23 AM           7036 Information      The Device Setup Manager service entered the stopped state.       
+8/7/2026 10:33:23 AM           7036 Information      The Client License Service (ClipSVC) service entered the stoppe...
+8/7/2026 10:33:19 AM           7036 Information      The Delivery Optimization service entered the stopped state.      
+
+
+   ProviderName: Microsoft-Windows-WindowsUpdateClient
+
+TimeCreated                      Id LevelDisplayName Message                                                           
+-----------                      -- ---------------- -------                                                           
+8/7/2026 10:33:04 AM             43 Information      Installation Started: Windows has started installing the follow...
+
+
+   ProviderName: Service Control Manager
+
+TimeCreated                      Id LevelDisplayName Message                                                           
+-----------                      -- ---------------- -------                                                           
+8/7/2026 10:32:58 AM           7036 Information      The Software Protection service entered the running state.        
+8/7/2026 10:32:36 AM           7036 Information      The Device Setup Manager service entered the running state.       
+8/7/2026 10:31:46 AM           7036 Information      The Volume Shadow Copy service entered the stopped state.         
+8/7/2026 10:31:41 AM           7036 Information      The Device Install Service service entered the stopped state.     
+8/7/2026 10:31:27 AM           7036 Information      The Microsoft Account Sign-in Assistant service entered the sto...
+8/7/2026 10:31:12 AM           7036 Information      The Windows Modules Installer service entered the stopped state.  
+8/7/2026 10:30:55 AM           7036 Information      The Device Association Service service entered the stopped state. 
+8/7/2026 10:29:38 AM           7036 Information      The Device Setup Manager service entered the stopped state.       
+
+

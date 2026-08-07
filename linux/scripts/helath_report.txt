@@ -1,0 +1,64 @@
+==================================================
+           Linux Server Health Report
+==================================================
+
+Generated On : 07-Aug-2026
+Server Name  : ip-10-0-1-108
+Operating System : Amazon Linux 2023
+
+--------------------------------------------------
+System Uptime
+--------------------------------------------------
+10:35:42 up 2 hours, 15 minutes
+
+--------------------------------------------------
+CPU Utilization
+--------------------------------------------------
+CPU Usage : 8%
+
+--------------------------------------------------
+Memory Utilization
+--------------------------------------------------
+Total Memory : 948 MB
+Used Memory  : 352 MB
+Free Memory  : 596 MB
+
+--------------------------------------------------
+Disk Utilization
+--------------------------------------------------
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/xvda1       20G  2.1G   18G  12% /
+
+--------------------------------------------------
+Running Services
+--------------------------------------------------
+nginx       Active (running)
+sshd        Active (running)
+systemd     Active (running)
+chronyd     Active (running)
+
+--------------------------------------------------
+Network Information
+--------------------------------------------------
+Private IP : 10.0.1.108
+Public IP  : 13.206.221.179
+
+--------------------------------------------------
+Application Status
+--------------------------------------------------
+Nginx Web Server : Running
+HTTP Status      : Accessible
+
+--------------------------------------------------
+Health Summary
+--------------------------------------------------
+✓ CPU utilization is within normal limits.
+✓ Memory utilization is healthy.
+✓ Disk usage is below the warning threshold.
+✓ Required services are running successfully.
+✓ Server uptime indicates stable operation.
+✓ Sample web application is accessible.
+
+==================================================
+          End of Health Report
+==================================================

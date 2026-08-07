@@ -1,0 +1,156 @@
+=====================================
+Windows Server Health Report
+Generated On: 08/07/2026 10:52:02
+=====================================
+
+Computer Name:
+EC2AMAZ-NDQ0IMS
+
+Operating System:
+
+Caption                                  Version   
+-------                                  -------   
+Microsoft Windows Server 2022 Datacenter 10.0.20348
+
+
+
+System Uptime:
+
+
+Days              : 0
+Hours             : 0
+Minutes           : 40
+Seconds           : 15
+Milliseconds      : 404
+Ticks             : 24154046263
+TotalDays         : 0.0279560720636574
+TotalHours        : 0.670945729527778
+TotalMinutes      : 40.2567437716667
+TotalSeconds      : 2415.4046263
+TotalMilliseconds : 2415404.6263
+
+
+
+
+Disk Usage:
+
+Name           Used (GB)     Free (GB) Provider      Root                                Cu
+                                                                                         rr
+                                                                                         en
+                                                                                         tL
+                                                                                         oc
+                                                                                         at
+                                                                                         io
+                                                                                          n
+----           ---------     --------- --------      ----                                --
+C                  19.96         10.04 FileSystem    C:\                                 or
+
+
+
+Running Services:
+
+Status   Name               DisplayName                           
+------   ----               -----------                           
+Running  AmazonSSMAgent     Amazon SSM Agent                      
+Running  BFE                Base Filtering Engine                 
+Running  BrokerInfrastru... Background Tasks Infrastructure Ser...
+Running  camsvc             Capability Access Manager Service     
+Running  cbdhsvc_6e482      Clipboard User Service_6e482          
+Running  CDPSvc             Connected Devices Platform Service    
+Running  CDPUserSvc_6e482   Connected Devices Platform User Ser...
+Running  CertPropSvc        Certificate Propagation               
+Running  CoreMessagingRe... CoreMessaging                         
+Running  CryptSvc           Cryptographic Services                
+Running  DcomLaunch         DCOM Server Process Launcher          
+Running  Dhcp               DHCP Client                           
+Running  DispBrokerDeskt... Display Policy Service                
+Running  Dnscache           DNS Client                            
+Running  DPS                Diagnostic Policy Service             
+Running  DsSvc              Data Sharing Service                  
+Running  EventLog           Windows Event Log                     
+Running  EventSystem        COM+ Event System                     
+Running  FontCache          Windows Font Cache Service            
+Running  gpsvc              Group Policy Client                   
+Running  iphlpsvc           IP Helper                             
+Running  KeyIso             CNG Key Isolation                     
+Running  LanmanServer       Server                                
+Running  LanmanWorkstation  Workstation                           
+Running  LicenseManager     Windows License Manager Service       
+Running  lmhosts            TCP/IP NetBIOS Helper                 
+Running  LSM                Local Session Manager                 
+Running  MDCoreSvc          Microsoft Defender Core Service       
+Running  mpssvc             Windows Defender Firewall             
+Running  MSDTC              Distributed Transaction Coordinator   
+Running  NcbService         Network Connection Broker             
+Running  netprofm           Network List Service                  
+Running  NlaSvc             Network Location Awareness            
+Running  nsi                Network Store Interface Service       
+Running  PcaSvc             Program Compatibility Assistant Ser...
+Running  PlugPlay           Plug and Play                         
+Running  Power              Power                                 
+Running  ProfSvc            User Profile Service                  
+Running  RpcEptMapper       RPC Endpoint Mapper                   
+Running  RpcSs              Remote Procedure Call (RPC)           
+Running  SamSs              Security Accounts Manager             
+Running  Schedule           Task Scheduler                        
+Running  SENS               System Event Notification Service     
+Running  SessionEnv         Remote Desktop Configuration          
+Running  ShellHWDetection   Shell Hardware Detection              
+Running  Spooler            Print Spooler                         
+Running  StateRepository    State Repository Service              
+Running  StorSvc            Storage Service                       
+Running  SysMain            SysMain                               
+Running  SystemEventsBroker System Events Broker                  
+Running  TabletInputService Touch Keyboard and Handwriting Pane...
+Running  TermService        Remote Desktop Services               
+Running  Themes             Themes                                
+Running  TimeBrokerSvc      Time Broker                           
+Running  TokenBroker        Web Account Manager                   
+Running  TrkWks             Distributed Link Tracking Client      
+Running  UALSVC             User Access Logging Service           
+Running  UmRdpService       Remote Desktop Services UserMode Po...
+Running  UserManager        User Manager                          
+Running  UsoSvc             Update Orchestrator Service           
+Running  W32Time            Windows Time                          
+Running  Wcmsvc             Windows Connection Manager            
+Running  WdiSystemHost      Diagnostic System Host                
+Running  WdNisSvc           Microsoft Defender Antivirus Networ...
+Running  WinDefend          Microsoft Defender Antivirus Service  
+Running  WinHttpAutoProx... WinHTTP Web Proxy Auto-Discovery Se...
+Running  Winmgmt            Windows Management Instrumentation    
+Running  WinRM              Windows Remote Management (WS-Manag...
+Running  WpnService         Windows Push Notifications System S...
+Running  WpnUserService_... Windows Push Notifications User Ser...
+
+
+
+Top 10 System Event Logs:
+
+   Index Time          EntryType   Source                 InstanceID Message               
+   ----- ----          ---------   ------                 ---------- -------               
+  146682 Aug 07 10:43  Information Service Control M...   1073748860 The Windows Update ...
+  146681 Aug 07 10:39  Information Service Control M...   1073748860 The AppX Deployment...
+  146680 Aug 07 10:39  Information Service Control M...   1073748860 The Client License ...
+  146679 Aug 07 10:38  Information Service Control M...   1073748860 The App Readiness s...
+  146678 Aug 07 10:34  Information Service Control M...   1073748860 The Microsoft Softw...
+  146677 Aug 07 10:34  Information Service Control M...   1073748860 The Client License ...
+  146676 Aug 07 10:33  Information Service Control M...   1073748860 The Software Protec...
+  146675 Aug 07 10:33  Information Microsoft-Windows...           19 Installation Succes...
+  146674 Aug 07 10:33  Information Service Control M...   1073748860 The Device Setup Ma...
+  146673 Aug 07 10:33  Information Service Control M...   1073748860 The Client License ...
+
+
+
+CPU Information:
+
+Name                                           LoadPercentage
+----                                           --------------
+Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz              2
+
+
+
+Memory Information:
+
+TotalMemoryGB FreeMemoryGB
+------------- ------------
+         3.94         1.75
