@@ -23,34 +23,18 @@ jobs:
           echo "Runner temp: $RUNNER_TEMP"
           ls -la
 
-      - name: Install SSH key
+            - name: Install SSH key
         shell: bash
         run: |
-          echo "STEP 1: Checking runner variables"
-          echo "RUNNER_TEMP=$RUNNER_TEMP"
-          echo "HOME=$HOME"
-
-          echo "STEP 2: Creating SSH directory"
           SSH_DIR="$RUNNER_TEMP/ssh"
-          mkdir -pv "$SSH_DIR"
-          echo "mkdir exit code: $?"
+          mkdir -p "$SSH_DIR"
 
-          echo "STEP 3: Writing SSH key"
           echo "${{ secrets.EC2_SSH_KEY }}" > "$SSH_DIR/hybrid-cloud-key.pem"
-          echo "write key exit code: $?"
-
-          echo "STEP 4: Setting permissions"
           chmod 600 "$SSH_DIR/hybrid-cloud-key.pem"
-          echo "chmod exit code: $?"
 
-          echo "STEP 5: Checking key file"
-          ls -la "$SSH_DIR"
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" > "$SSH_DIR/known_hosts"
 
-          echo "STEP 6: Testing SSH key"
-          ssh-keygen -y -f "$SSH_DIR/hybrid-cloud-key.pem" > /dev/null
-          echo "ssh-keygen exit code: $?"
-
-          echo "STEP 7: SSH setup completed"
+          echo "SSH setup completed"
 
       - name: Deploy application
         shell: bash
