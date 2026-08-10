@@ -22,19 +22,30 @@ jobs:
           pwd
           ls -la
 
-      - name: Install SSH key
+            - name: Diagnose GitHub runner
         shell: bash
         run: |
-          SSH_DIR="$RUNNER_TEMP/ssh"
-          mkdir -p "$SSH_DIR"
-          chmod 700 "$SSH_DIR"
+          echo "=== Runner information ==="
+          echo "User: $(whoami)"
+          echo "HOME: $HOME"
+          echo "RUNNER_TEMP: $RUNNER_TEMP"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          echo "PWD: $(pwd)"
+          echo "Shell: $SHELL"
 
-          echo "${{ secrets.EC2_SSH_KEY }}" > "$SSH_DIR/hybrid-cloud-key.pem"
-          chmod 600 "$SSH_DIR/hybrid-cloud-key.pem"
+          echo "=== Environment ==="
+          env | sort | grep -E '^(HOME|RUNNER_|GITHUB_WORKSPACE|SHELL)=' || true
 
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" > "$SSH_DIR/known_hosts"
+          echo "=== Directory checks ==="
+          ls -ld "$HOME" || true
+          ls -ld "$RUNNER_TEMP" || true
+          ls -ld "$GITHUB_WORKSPACE" || true
 
-          echo "SSH setup completed"
+          echo "=== Temp directory test ==="
+          TEST_DIR="$RUNNER_TEMP/ssh-test"
+          echo "Testing: $TEST_DIR"
+          mkdir -pv "$TEST_DIR"
+          ls -ld "$TEST_DIR"
 
       - name: Deploy application
         shell: bash
