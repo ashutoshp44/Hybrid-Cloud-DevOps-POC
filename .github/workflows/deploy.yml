@@ -13,25 +13,38 @@ jobs:
       - name: Checkout application source code
         uses: actions/checkout@v4
 
-      - name: Install SSH key
+      - name: Check runner environment
+        shell: bash
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/hybrid-cloud-key.pem
-          chmod 600 ~/.ssh/hybrid-cloud-key.pem
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+          echo "User: $(whoami)"
+          echo "Home: $HOME"
+          echo "Shell: $SHELL"
+          pwd
+          ls -la
+
+      - name: Install SSH key
+        shell: bash
+        run: |
+          set -e
+          mkdir -p "$HOME/.ssh"
+          echo "${{ secrets.EC2_SSH_KEY }}" > "$HOME/.ssh/hybrid-cloud-key.pem"
+          chmod 600 "$HOME/.ssh/hybrid-cloud-key.pem"
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> "$HOME/.ssh/known_hosts"
 
       - name: Deploy application
+        shell: bash
         run: |
-          scp -i ~/.ssh/hybrid-cloud-key.pem \
+          scp -i "$HOME/.ssh/hybrid-cloud-key.pem" \
             app/index.html \
-            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html"
 
-          ssh -i ~/.ssh/hybrid-cloud-key.pem \
-            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} \
+          ssh -i "$HOME/.ssh/hybrid-cloud-key.pem" \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "sudo cp /tmp/index.html /usr/share/nginx/html/index.html && sudo systemctl restart nginx"
 
       - name: Verify application
+        shell: bash
         run: |
-          ssh -i ~/.ssh/hybrid-cloud-key.pem \
-            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} \
+          ssh -i "$HOME/.ssh/hybrid-cloud-key.pem" \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "curl -f http://localhost/"
