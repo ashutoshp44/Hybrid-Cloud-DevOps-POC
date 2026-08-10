@@ -25,16 +25,21 @@ jobs:
       - name: Install SSH key
         shell: bash
         run: |
-          set -e
-          mkdir -p "$HOME/.ssh"
-          echo "${{ secrets.EC2_SSH_KEY }}" > "$HOME/.ssh/hybrid-cloud-key.pem"
-          chmod 600 "$HOME/.ssh/hybrid-cloud-key.pem"
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> "$HOME/.ssh/known_hosts"
+          SSH_DIR="$RUNNER_TEMP/ssh"
+          mkdir -p "$SSH_DIR"
+          chmod 700 "$SSH_DIR"
+
+          echo "${{ secrets.EC2_SSH_KEY }}" > "$SSH_DIR/hybrid-cloud-key.pem"
+          chmod 600 "$SSH_DIR/hybrid-cloud-key.pem"
+
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" > "$SSH_DIR/known_hosts"
+
+          echo "SSH setup completed"
 
       - name: Deploy application
         shell: bash
         run: |
-          scp -i "$HOME/.ssh/hybrid-cloud-key.pem" \
+          scp -i "$RUNNER_TEMP/ssh/hybrid-cloud-key.pem"
             app/index.html \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html"
 
@@ -45,6 +50,6 @@ jobs:
       - name: Verify application
         shell: bash
         run: |
-          ssh -i "$HOME/.ssh/hybrid-cloud-key.pem" \
+          ssh -i "$RUNNER_TEMP/ssh/hybrid-cloud-key.pem" \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "curl -f http://localhost/"
