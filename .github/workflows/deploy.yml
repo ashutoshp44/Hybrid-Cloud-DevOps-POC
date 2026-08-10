@@ -19,48 +19,40 @@ jobs:
           echo "User: $(whoami)"
           echo "Home: $HOME"
           echo "Shell: $SHELL"
-          pwd
+          echo "Working directory: $(pwd)"
+          echo "Runner temp: $RUNNER_TEMP"
           ls -la
 
-            - name: Diagnose GitHub runner
+      - name: Install SSH key
         shell: bash
         run: |
-          echo "=== Runner information ==="
-          echo "User: $(whoami)"
-          echo "HOME: $HOME"
-          echo "RUNNER_TEMP: $RUNNER_TEMP"
-          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-          echo "PWD: $(pwd)"
-          echo "Shell: $SHELL"
-
-          echo "=== Environment ==="
-          env | sort | grep -E '^(HOME|RUNNER_|GITHUB_WORKSPACE|SHELL)=' || true
-
-          echo "=== Directory checks ==="
-          ls -ld "$HOME" || true
-          ls -ld "$RUNNER_TEMP" || true
-          ls -ld "$GITHUB_WORKSPACE" || true
-
-          echo "=== Temp directory test ==="
-          TEST_DIR="$RUNNER_TEMP/ssh-test"
-          echo "Testing: $TEST_DIR"
-          mkdir -pv "$TEST_DIR"
-          ls -ld "$TEST_DIR"
+          SSH_DIR="$RUNNER_TEMP/ssh"
+          mkdir -p "$SSH_DIR"
+          echo "${{ secrets.EC2_SSH_KEY }}" > "$SSH_DIR/hybrid-cloud-key.pem"
+          chmod 600 "$SSH_DIR/hybrid-cloud-key.pem"
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> "$SSH_DIR/known_hosts"
 
       - name: Deploy application
         shell: bash
         run: |
-          scp -i "$RUNNER_TEMP/ssh/hybrid-cloud-key.pem"
+          SSH_DIR="$RUNNER_TEMP/ssh"
+
+          scp -i "$SSH_DIR/hybrid-cloud-key.pem" \
+            -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
             app/index.html \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html"
 
-          ssh -i "$HOME/.ssh/hybrid-cloud-key.pem" \
+          ssh -i "$SSH_DIR/hybrid-cloud-key.pem" \
+            -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "sudo cp /tmp/index.html /usr/share/nginx/html/index.html && sudo systemctl restart nginx"
 
       - name: Verify application
         shell: bash
         run: |
-          ssh -i "$RUNNER_TEMP/ssh/hybrid-cloud-key.pem" \
+          SSH_DIR="$RUNNER_TEMP/ssh"
+
+          ssh -i "$SSH_DIR/hybrid-cloud-key.pem" \
+            -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "curl -f http://localhost/"
