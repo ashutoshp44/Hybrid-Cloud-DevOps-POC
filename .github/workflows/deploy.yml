@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - - name: Checkout application source code
+      - name: Checkout application source code
         uses: actions/checkout@v4
 
       - name: Install SSH key
