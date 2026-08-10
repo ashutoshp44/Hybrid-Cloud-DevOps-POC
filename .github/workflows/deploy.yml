@@ -23,17 +23,14 @@ jobs:
           echo "Runner temp: $RUNNER_TEMP"
           ls -la
 
-            - name: Install SSH key
+      - name: Install SSH key
         shell: bash
         run: |
           SSH_DIR="$RUNNER_TEMP/ssh"
           mkdir -p "$SSH_DIR"
-
           echo "${{ secrets.EC2_SSH_KEY }}" > "$SSH_DIR/hybrid-cloud-key.pem"
           chmod 600 "$SSH_DIR/hybrid-cloud-key.pem"
-
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" > "$SSH_DIR/known_hosts"
-
           echo "SSH setup completed"
 
       - name: Deploy application
