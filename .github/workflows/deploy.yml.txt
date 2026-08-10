@@ -1,0 +1,37 @@
+name: Deploy Application to Linux EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/hybrid-cloud-key.pem
+          chmod 600 ~/.ssh/hybrid-cloud-key.pem
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy application
+        run: |
+          scp -i ~/.ssh/hybrid-cloud-key.pem \
+            app/index.html \
+            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html
+
+          ssh -i ~/.ssh/hybrid-cloud-key.pem \
+            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} \
+            "sudo cp /tmp/index.html /usr/share/nginx/html/index.html && sudo systemctl restart nginx"
+
+      - name: Verify application
+        run: |
+          ssh -i ~/.ssh/hybrid-cloud-key.pem \
+            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} \
+            "curl -f http://localhost/"
