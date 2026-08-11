@@ -27,33 +27,96 @@ jobs:
         shell: bash
         run: |
           SSH_DIR="$RUNNER_TEMP/ssh"
+
           mkdir -p "$SSH_DIR"
+
           echo "${{ secrets.EC2_SSH_KEY }}" > "$SSH_DIR/hybrid-cloud-key.pem"
           chmod 600 "$SSH_DIR/hybrid-cloud-key.pem"
+
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" > "$SSH_DIR/known_hosts"
+
           echo "SSH setup completed"
+
+      - name: Backup current application
+        shell: bash
+        run: |
+          SSH_DIR="$RUNNER_TEMP/ssh"
+
+          ssh \
+            -i "$SSH_DIR/hybrid-cloud-key.pem" \
+            -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
+            "sudo cp /usr/share/nginx/html/index.html /usr/share/nginx/html/index.html.backup"
+
+          echo "Current application backed up successfully."
 
       - name: Deploy application
         shell: bash
         run: |
           SSH_DIR="$RUNNER_TEMP/ssh"
 
-          scp -i "$SSH_DIR/hybrid-cloud-key.pem" \
+          scp \
+            -i "$SSH_DIR/hybrid-cloud-key.pem" \
             -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
             app/index.html \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html"
 
-          ssh -i "$SSH_DIR/hybrid-cloud-key.pem" \
+          ssh \
+            -i "$SSH_DIR/hybrid-cloud-key.pem" \
             -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "sudo cp /tmp/index.html /usr/share/nginx/html/index.html && sudo systemctl restart nginx"
+
+          echo "Application deployed successfully."
 
       - name: Verify application
         shell: bash
         run: |
           SSH_DIR="$RUNNER_TEMP/ssh"
 
-          ssh -i "$SSH_DIR/hybrid-cloud-key.pem" \
+          ssh \
+            -i "$SSH_DIR/hybrid-cloud-key.pem" \
             -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
             "curl -f http://localhost/"
+
+          echo "Application verification successful."
+
+      - name: Rollback application
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          SSH_DIR="$RUNNER_TEMP/ssh"
+
+          echo "Deployment or verification failed."
+          echo "Starting automatic rollback..."
+
+          ssh \
+            -i "$SSH_DIR/hybrid-cloud-key.pem" \
+            -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
+            "if [ -f /usr/share/nginx/html/index.html.backup ]; then sudo cp /usr/share/nginx/html/index.html.backup /usr/share/nginx/html/index.html && sudo systemctl restart nginx; else echo 'Backup file not found'; exit 1; fi"
+
+          echo "Rollback completed successfully."
+
+      - name: Verify rollback
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          SSH_DIR="$RUNNER_TEMP/ssh"
+
+          echo "Verifying rollback..."
+
+          ssh \
+            -i "$SSH_DIR/hybrid-cloud-key.pem" \
+            -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
+            "curl -f http://localhost/"
+
+          echo "Rollback verification completed."
