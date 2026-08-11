@@ -13,6 +13,38 @@ jobs:
       - name: Checkout application source code
         uses: actions/checkout@v4
 
+      - name: Build application
+        shell: bash
+        run: |
+          echo "Starting application build..."
+
+          mkdir -p build
+          cp app/index.html build/index.html
+
+          echo "Build completed successfully."
+          ls -la build
+
+      - name: Test application
+        shell: bash
+        run: |
+          echo "Running application tests..."
+
+          test -f build/index.html
+
+          grep -q "Hybrid Cloud DevOps" build/index.html
+
+          echo "Application tests passed successfully."
+
+      - name: Package application
+        shell: bash
+        run: |
+          echo "Creating deployment package..."
+
+          tar -czf application.tar.gz -C build index.html
+
+          echo "Package created successfully."
+          ls -lh application.tar.gz
+
       - name: Check runner environment
         shell: bash
         run: |
@@ -35,7 +67,7 @@ jobs:
 
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" > "$SSH_DIR/known_hosts"
 
-          echo "SSH setup completed"
+          echo "SSH setup completed."
 
       - name: Backup current application
         shell: bash
@@ -60,15 +92,15 @@ jobs:
             -i "$SSH_DIR/hybrid-cloud-key.pem" \
             -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
             -o StrictHostKeyChecking=yes \
-            app/index.html \
-            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/index.html"
+            application.tar.gz \
+            "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/tmp/application.tar.gz"
 
           ssh \
             -i "$SSH_DIR/hybrid-cloud-key.pem" \
             -o UserKnownHostsFile="$SSH_DIR/known_hosts" \
             -o StrictHostKeyChecking=yes \
             "${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}" \
-            "sudo cp /tmp/index.html /usr/share/nginx/html/index.html && sudo systemctl restart nginx"
+            "rm -rf /tmp/deployment && mkdir -p /tmp/deployment && tar -xzf /tmp/application.tar.gz -C /tmp/deployment && sudo cp /tmp/deployment/index.html /usr/share/nginx/html/index.html && sudo systemctl restart nginx"
 
           echo "Application deployed successfully."
 
