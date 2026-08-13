@@ -59,36 +59,28 @@ pipeline {
                 echo 'Deploying application to Linux EC2...'
 
                 sh '''
-                    mkdir -p "$WORKSPACE/.ssh"
+                    echo "Creating application backup..."
 
-                    chmod 600 "$JENKINS_SSH_KEY"
+                    sudo cp /usr/share/nginx/html/index.html \
+                        /usr/share/nginx/html/index.html.backup
 
-                    ssh-keyscan -H "$EC2_HOST" > "$WORKSPACE/.ssh/known_hosts"
+                    echo "Preparing deployment..."
 
-                    ssh \
-                      -i "$JENKINS_SSH_KEY" \
-                      -o UserKnownHostsFile="$WORKSPACE/.ssh/known_hosts" \
-                      -o StrictHostKeyChecking=yes \
-                      "$EC2_USERNAME@$EC2_HOST" \
-                      "sudo cp /usr/share/nginx/html/index.html /usr/share/nginx/html/index.html.backup"
+                    rm -rf /tmp/deployment
+                    mkdir -p /tmp/deployment
 
-                    scp \
-                      -i "$JENKINS_SSH_KEY" \
-                      -o UserKnownHostsFile="$WORKSPACE/.ssh/known_hosts" \
-                      -o StrictHostKeyChecking=yes \
-                      application.tar.gz \
-                      "$EC2_USERNAME@$EC2_HOST:/tmp/application.tar.gz"
+                    tar -xzf application.tar.gz -C /tmp/deployment
 
-                    ssh \
-                      -i "$JENKINS_SSH_KEY" \
-                      -o UserKnownHostsFile="$WORKSPACE/.ssh/known_hosts" \
-                      -o StrictHostKeyChecking=yes \
-                      "$EC2_USERNAME@$EC2_HOST" \
-                      "rm -rf /tmp/deployment && \
-                       mkdir -p /tmp/deployment && \
-                       tar -xzf /tmp/application.tar.gz -C /tmp/deployment && \
-                       sudo cp /tmp/deployment/index.html /usr/share/nginx/html/index.html && \
-                       sudo systemctl restart nginx"
+                    echo "Deploying application..."
+
+                    sudo cp /tmp/deployment/index.html \
+                        /usr/share/nginx/html/index.html
+
+                    echo "Restarting Nginx..."
+
+                    sudo systemctl restart nginx
+
+                    echo "Deployment completed successfully."
                 '''
             }
         }
@@ -98,12 +90,7 @@ pipeline {
                 echo 'Verifying application...'
 
                 sh '''
-                    ssh \
-                      -i "$JENKINS_SSH_KEY" \
-                      -o UserKnownHostsFile="$WORKSPACE/.ssh/known_hosts" \
-                      -o StrictHostKeyChecking=yes \
-                      "$EC2_USERNAME@$EC2_HOST" \
-                      "curl -f http://localhost/"
+                    curl -f http://localhost/
 
                     echo "Application verification successful."
                 '''
@@ -112,26 +99,24 @@ pipeline {
     }
 
     post {
+
         failure {
             echo 'Pipeline failed. Starting automatic rollback.'
 
             sh '''
-                if [ -f "$JENKINS_SSH_KEY" ]; then
+                if [ -f /usr/share/nginx/html/index.html.backup ]; then
 
-                    ssh \
-                      -i "$JENKINS_SSH_KEY" \
-                      -o UserKnownHostsFile="$WORKSPACE/.ssh/known_hosts" \
-                      -o StrictHostKeyChecking=yes \
-                      "$EC2_USERNAME@$EC2_HOST" \
-                      "if [ -f /usr/share/nginx/html/index.html.backup ]; then \
-                       sudo cp /usr/share/nginx/html/index.html.backup /usr/share/nginx/html/index.html && \
-                       sudo systemctl restart nginx; \
-                       else \
-                       echo 'Backup file not found'; \
-                       exit 1; \
-                       fi"
+                    sudo cp /usr/share/nginx/html/index.html.backup \
+                        /usr/share/nginx/html/index.html
+
+                    sudo systemctl restart nginx
 
                     echo "Rollback completed."
+
+                else
+
+                    echo "Backup file not found. Rollback cannot be performed."
+
                 fi
             '''
         }
@@ -143,7 +128,7 @@ pipeline {
         always {
             sh '''
                 rm -f application.tar.gz || true
-                rm -rf "$WORKSPACE/.ssh" || true
+                rm -rf /tmp/deployment || true
             '''
         }
     }
