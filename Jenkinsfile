@@ -15,6 +15,26 @@ pipeline {
             }
         }
 
+        stage('Maven Build') {
+            steps {
+                echo 'Running Maven build...'
+
+                sh '''
+                    mvn clean compile
+                '''
+            }
+        }
+
+        stage('Maven Test') {
+            steps {
+                echo 'Running Maven unit tests...'
+
+                sh '''
+                    mvn test
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Building application...'
