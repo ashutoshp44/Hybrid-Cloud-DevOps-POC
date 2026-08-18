@@ -35,6 +35,35 @@ pipeline {
             }
         }
 
+        stage('Docker Build') {
+            steps {
+                echo 'Building Docker image...'
+
+                sh '''
+                    docker build -t hybrid-cloud-devops-poc:latest .
+                '''
+            }
+        }
+
+        stage('Docker Push to ECR') {
+            steps {
+                echo 'Pushing Docker image to Amazon ECR...'
+
+                sh '''
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+                    ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
+
+                    aws ecr get-login-password --region ap-south-1 | \
+                    docker login --username AWS --password-stdin \
+                    "$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com"
+
+                    docker tag hybrid-cloud-devops-poc:latest "$ECR_URI:latest"
+
+                    docker push "$ECR_URI:latest"
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Building application...'
