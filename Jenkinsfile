@@ -52,14 +52,26 @@ pipeline {
                 sh '''
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
                     ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
+                    VERSION="build-${BUILD_NUMBER}"
+
+                    echo "Logging in to Amazon ECR..."
 
                     aws ecr get-login-password --region ap-south-1 | \
                     docker login --username AWS --password-stdin \
                     "$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com"
 
+                    echo "Tagging image with version: $VERSION"
+
+                    docker tag hybrid-cloud-devops-poc:latest "$ECR_URI:$VERSION"
                     docker tag hybrid-cloud-devops-poc:latest "$ECR_URI:latest"
 
+                    echo "Pushing versioned image: $VERSION"
+                    docker push "$ECR_URI:$VERSION"
+
+                    echo "Updating latest tag..."
                     docker push "$ECR_URI:latest"
+
+                    echo "ECR image push completed successfully."
                 '''
             }
         }
