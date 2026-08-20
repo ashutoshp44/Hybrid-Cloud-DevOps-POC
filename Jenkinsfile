@@ -1,12 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        APP_NAME = 'hybrid-cloud-devops-poc'
-        BUILD_DIR = 'build'
-        PACKAGE_NAME = 'application.tar.gz'
-    }
-
     stages {
 
         stage('Checkout') {
@@ -66,9 +60,11 @@ pipeline {
                     docker tag hybrid-cloud-devops-poc:latest "$ECR_URI:latest"
 
                     echo "Pushing versioned image: $VERSION"
+
                     docker push "$ECR_URI:$VERSION"
 
                     echo "Updating latest tag..."
+
                     docker push "$ECR_URI:latest"
 
                     echo "ECR image push completed successfully."
@@ -83,9 +79,11 @@ pipeline {
                 sh '''
                     rm -rf build
                     mkdir -p build
+
                     cp app/index.html build/index.html
 
                     echo "Build completed."
+
                     ls -la build
                 '''
             }
@@ -97,6 +95,7 @@ pipeline {
 
                 sh '''
                     test -f build/index.html
+
                     grep -q "Hybrid Cloud DevOps" build/index.html
 
                     echo "Application tests passed."
@@ -110,6 +109,9 @@ pipeline {
 
                 sh '''
                     tar -czf application.tar.gz -C build index.html
+
+                    echo "Package created successfully."
+
                     ls -lh application.tar.gz
                 '''
             }
@@ -117,29 +119,57 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'Deploying application to Linux EC2...'
+                echo 'Deploying versioned Docker image from Amazon ECR...'
 
                 sh '''
-                    echo "Creating application backup..."
+                    set -e
 
-                    sudo cp /usr/share/nginx/html/index.html \
-                        /usr/share/nginx/html/index.html.backup
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-                    echo "Preparing deployment..."
+                    ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
 
-                    rm -rf /tmp/deployment
-                    mkdir -p /tmp/deployment
+                    VERSION="build-${BUILD_NUMBER}"
 
-                    tar -xzf application.tar.gz -C /tmp/deployment
+                    echo "Deployment version: $VERSION"
 
-                    echo "Deploying application..."
+                    echo "Logging in to Amazon ECR..."
 
-                    sudo cp /tmp/deployment/index.html \
-                        /usr/share/nginx/html/index.html
+                    aws ecr get-login-password --region ap-south-1 | \
+                    docker login --username AWS --password-stdin \
+                    "$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com"
 
-                    echo "Restarting Nginx..."
+                    echo "Pulling ECR image: $VERSION"
 
-                    sudo systemctl restart nginx
+                    docker pull "$ECR_URI:$VERSION"
+
+                    echo "Checking existing application container..."
+
+                    if docker ps -a --format '{{.Names}}' | grep -q '^ecr-app$'; then
+
+                        echo "Stopping existing ecr-app container..."
+
+                        docker stop ecr-app || true
+
+                        echo "Removing existing ecr-app container..."
+
+                        docker rm ecr-app || true
+
+                    fi
+
+                    echo "Starting new application container..."
+
+                    docker run -d \
+                        --name ecr-app \
+                        -p 127.0.0.1:8081:80 \
+                        "$ECR_URI:$VERSION"
+
+                    echo "Waiting for application to start..."
+
+                    sleep 5
+
+                    echo "Checking Docker container status..."
+
+                    docker ps --filter "name=ecr-app"
 
                     echo "Deployment completed successfully."
                 '''
@@ -148,12 +178,22 @@ pipeline {
 
         stage('Verify') {
             steps {
-                echo 'Verifying application...'
+                echo 'Verifying Docker application and production endpoint...'
 
                 sh '''
+                    set -e
+
+                    echo "Checking Docker application on port 8081..."
+
+                    curl -f http://127.0.0.1:8081/
+
+                    echo "Docker application health check passed."
+
+                    echo "Checking production endpoint through Nginx..."
+
                     curl -f http://localhost/
 
-                    echo "Application verification successful."
+                    echo "Production application verification successful."
                 '''
             }
         }
@@ -162,23 +202,24 @@ pipeline {
     post {
 
         failure {
-            echo 'Pipeline failed. Starting automatic rollback.'
+            echo 'Pipeline failed. Starting rollback...'
 
             sh '''
-                if [ -f /usr/share/nginx/html/index.html.backup ]; then
+                echo "Checking for running ecr-app container..."
 
-                    sudo cp /usr/share/nginx/html/index.html.backup \
-                        /usr/share/nginx/html/index.html
+                if docker ps -a --format '{{.Names}}' | grep -q '^ecr-app$'; then
 
-                    sudo systemctl restart nginx
+                    echo "Removing failed ecr-app container..."
 
-                    echo "Rollback completed."
+                    docker stop ecr-app || true
 
-                else
-
-                    echo "Backup file not found. Rollback cannot be performed."
+                    docker rm ecr-app || true
 
                 fi
+
+                echo "Rollback cleanup completed."
+
+                echo "Previous ECR image remains available for manual rollback."
             '''
         }
 
@@ -193,4 +234,5 @@ pipeline {
             '''
         }
     }
+}
 }
