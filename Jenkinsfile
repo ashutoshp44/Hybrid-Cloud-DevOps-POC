@@ -191,7 +191,7 @@ pipeline {
 
                     echo "Checking production endpoint through Nginx..."
 
-                    curl -f http://localhost:9999/
+                    curl -f http://localhost/
 
                     echo "Production application verification successful."
                 '''
