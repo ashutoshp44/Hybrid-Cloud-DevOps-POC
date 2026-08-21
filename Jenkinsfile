@@ -39,13 +39,32 @@ pipeline {
             }
         }
 
+        stage('Trivy Security Scan') {
+            steps {
+                echo 'Scanning Docker image for HIGH and CRITICAL vulnerabilities...'
+
+                sh '''
+                    set -e
+
+                    trivy image \
+                        --severity HIGH,CRITICAL \
+                        --exit-code 1 \
+                        hybrid-cloud-devops-poc:latest
+
+                    echo "Trivy security scan passed."
+                '''
+            }
+        }
+
         stage('Docker Push to ECR') {
             steps {
                 echo 'Pushing Docker image to Amazon ECR...'
 
                 sh '''
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
                     ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
+
                     VERSION="build-${BUILD_NUMBER}"
 
                     echo "Logging in to Amazon ECR..."
