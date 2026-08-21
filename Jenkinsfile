@@ -202,14 +202,48 @@ pipeline {
     post {
 
         failure {
-            echo 'Pipeline failed. Starting rollback...'
+            echo 'Pipeline failed. Starting automatic rollback...'
 
             sh '''
-                echo "Checking for running ecr-app container..."
+                set +e
+
+                ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+                ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
+
+                CURRENT_BUILD="${BUILD_NUMBER}"
+                PREVIOUS_BUILD=$((CURRENT_BUILD - 1))
+
+                PREVIOUS_VERSION="build-${PREVIOUS_BUILD}"
+
+                echo "Current failed build: ${CURRENT_BUILD}"
+                echo "Rollback target: ${PREVIOUS_VERSION}"
+
+                if [ "${PREVIOUS_BUILD}" -lt 1 ]; then
+                    echo "No previous build available for rollback."
+                    exit 1
+                fi
+
+                echo "Logging in to Amazon ECR..."
+
+                aws ecr get-login-password --region ap-south-1 | \
+                docker login --username AWS --password-stdin \
+                "$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com"
+
+                echo "Checking rollback image..."
+
+                if ! docker image inspect "$ECR_URI:$PREVIOUS_VERSION" >/dev/null 2>&1; then
+
+                    echo "Previous image not available locally."
+                    echo "Pulling ${PREVIOUS_VERSION} from ECR..."
+
+                    docker pull "$ECR_URI:$PREVIOUS_VERSION"
+
+                fi
+
+                echo "Removing failed application container..."
 
                 if docker ps -a --format '{{.Names}}' | grep -q '^ecr-app$'; then
-
-                    echo "Removing failed ecr-app container..."
 
                     docker stop ecr-app || true
 
@@ -217,9 +251,48 @@ pipeline {
 
                 fi
 
-                echo "Rollback cleanup completed."
+                echo "Starting rollback container..."
 
-                echo "Previous ECR image remains available for manual rollback."
+                docker run -d \
+                    --name ecr-app \
+                    -p 127.0.0.1:8081:80 \
+                    "$ECR_URI:$PREVIOUS_VERSION"
+
+                echo "Waiting for rollback application..."
+
+                sleep 5
+
+                echo "Checking rollback container..."
+
+                if ! docker ps --format '{{.Names}}' | grep -q '^ecr-app$'; then
+
+                    echo "Rollback container failed to start."
+                    exit 1
+
+                fi
+
+                echo "Testing rollback application on port 8081..."
+
+                if ! curl -f http://127.0.0.1:8081/; then
+
+                    echo "Rollback application health check FAILED."
+                    exit 1
+
+                fi
+
+                echo "Testing rollback production endpoint through Nginx..."
+
+                if ! curl -f http://localhost/; then
+
+                    echo "Rollback production health check FAILED."
+                    exit 1
+
+                fi
+
+                echo "=========================================="
+                echo "AUTOMATIC ROLLBACK COMPLETED SUCCESSFULLY"
+                echo "Rollback version: ${PREVIOUS_VERSION}"
+                echo "=========================================="
             '''
         }
 
