@@ -61,6 +61,8 @@ pipeline {
                 echo 'Pushing Docker image to Amazon ECR...'
 
                 sh '''
+                    set -e
+
                     ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
                     ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
@@ -91,6 +93,51 @@ pipeline {
             }
         }
 
+        stage('Deployment Information') {
+            steps {
+                echo 'Collecting deployment traceability information...'
+
+                sh '''
+                    set -e
+
+                    echo "=========================================="
+                    echo "DEPLOYMENT INFORMATION"
+                    echo "=========================================="
+
+                    echo "Jenkins Build Number : ${BUILD_NUMBER}"
+                    echo "Jenkins Build URL    : ${BUILD_URL}"
+
+                    GIT_COMMIT_ID=$(git rev-parse HEAD)
+                    GIT_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+                    echo "Git Commit ID        : ${GIT_COMMIT_ID}"
+                    echo "Git Branch           : ${GIT_BRANCH_NAME}"
+
+                    VERSION="build-${BUILD_NUMBER}"
+
+                    echo "ECR Image Tag        : ${VERSION}"
+
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+                    ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
+
+                    echo "ECR Repository       : ${ECR_URI}"
+
+                    IMAGE_DIGEST=$(docker inspect \
+                        "$ECR_URI:$VERSION" \
+                        --format '{{index .RepoDigests 0}}' 2>/dev/null || true)
+
+                    echo "ECR Image Digest     : ${IMAGE_DIGEST}"
+
+                    echo "Deployment Time      : $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+                    echo "=========================================="
+                    echo "Deployment traceability information collected successfully."
+                    echo "=========================================="
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 echo 'Building application...'
@@ -113,6 +160,8 @@ pipeline {
                 echo 'Testing application...'
 
                 sh '''
+                    set -e
+
                     test -f build/index.html
 
                     grep -q "Hybrid Cloud DevOps" build/index.html
@@ -127,6 +176,8 @@ pipeline {
                 echo 'Creating deployment package...'
 
                 sh '''
+                    set -e
+
                     tar -czf application.tar.gz -C build index.html
 
                     echo "Package created successfully."
