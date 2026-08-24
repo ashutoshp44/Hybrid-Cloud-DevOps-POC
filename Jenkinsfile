@@ -1,6 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        APP_NAME = 'hybrid-cloud-devops-poc'
+        BUILD_DIR = 'build'
+        PACKAGE_NAME = 'application.tar.gz'
+        SNS_TOPIC_ARN = 'arn:aws:sns:ap-south-1:811320358992:Alert'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -14,6 +21,8 @@ pipeline {
                 echo 'Running Maven build...'
 
                 sh '''
+                    set -e
+
                     mvn clean compile
                 '''
             }
@@ -24,6 +33,8 @@ pipeline {
                 echo 'Running Maven unit tests...'
 
                 sh '''
+                    set -e
+
                     mvn test
                 '''
             }
@@ -34,6 +45,8 @@ pipeline {
                 echo 'Building Docker image...'
 
                 sh '''
+                    set -e
+
                     docker build -t hybrid-cloud-devops-poc:latest .
                 '''
             }
@@ -143,6 +156,8 @@ pipeline {
                 echo 'Building application...'
 
                 sh '''
+                    set -e
+
                     rm -rf build
                     mkdir -p build
 
@@ -290,84 +305,135 @@ pipeline {
                 echo "Rollback target: ${PREVIOUS_VERSION}"
 
                 if [ "${PREVIOUS_BUILD}" -lt 1 ]; then
+
                     echo "No previous build available for rollback."
-                    exit 1
+
+                else
+
+                    echo "Logging in to Amazon ECR..."
+
+                    aws ecr get-login-password --region ap-south-1 | \
+                    docker login --username AWS --password-stdin \
+                    "$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com"
+
+                    echo "Checking rollback image..."
+
+                    if ! docker image inspect "$ECR_URI:$PREVIOUS_VERSION" >/dev/null 2>&1; then
+
+                        echo "Previous image not available locally."
+                        echo "Pulling ${PREVIOUS_VERSION} from ECR..."
+
+                        docker pull "$ECR_URI:$PREVIOUS_VERSION"
+
+                    fi
+
+                    echo "Removing failed application container..."
+
+                    if docker ps -a --format '{{.Names}}' | grep -q '^ecr-app$'; then
+
+                        docker stop ecr-app || true
+
+                        docker rm ecr-app || true
+
+                    fi
+
+                    echo "Starting rollback container..."
+
+                    docker run -d \
+                        --name ecr-app \
+                        -p 127.0.0.1:8081:80 \
+                        "$ECR_URI:$PREVIOUS_VERSION"
+
+                    echo "Waiting for rollback application..."
+
+                    sleep 5
+
+                    echo "Checking rollback container..."
+
+                    if docker ps --format '{{.Names}}' | grep -q '^ecr-app$'; then
+
+                        echo "Rollback container started successfully."
+
+                    else
+
+                        echo "Rollback container failed to start."
+
+                    fi
+
+                    echo "Testing rollback application on port 8081..."
+
+                    curl -f http://127.0.0.1:8081/ || true
+
+                    echo "Testing rollback production endpoint through Nginx..."
+
+                    curl -f http://localhost/ || true
+
+                    echo "=========================================="
+                    echo "AUTOMATIC ROLLBACK COMPLETED"
+                    echo "Rollback version: ${PREVIOUS_VERSION}"
+                    echo "=========================================="
+
                 fi
 
-                echo "Logging in to Amazon ECR..."
+                echo "Sending Jenkins failure/rollback notification..."
 
-                aws ecr get-login-password --region ap-south-1 | \
-                docker login --username AWS --password-stdin \
-                "$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com"
+                GIT_COMMIT_ID=$(git rev-parse HEAD 2>/dev/null || echo "Unavailable")
 
-                echo "Checking rollback image..."
+                aws sns publish \
+                    --topic-arn "$SNS_TOPIC_ARN" \
+                    --subject "FAILURE / ROLLBACK - Hybrid Cloud DevOps POC - Build #${BUILD_NUMBER}" \
+                    --message "Hybrid Cloud DevOps POC pipeline failed.
 
-                if ! docker image inspect "$ECR_URI:$PREVIOUS_VERSION" >/dev/null 2>&1; then
+Jenkins Build: #${BUILD_NUMBER}
+Git Commit: ${GIT_COMMIT_ID}
+Failed ECR Image: build-${BUILD_NUMBER}
+Rollback Target: build-${PREVIOUS_BUILD}
+Status: FAILURE
+Rollback: Attempted automatically
+Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+Jenkins URL: ${BUILD_URL}" \
+                    --region ap-south-1
 
-                    echo "Previous image not available locally."
-                    echo "Pulling ${PREVIOUS_VERSION} from ECR..."
-
-                    docker pull "$ECR_URI:$PREVIOUS_VERSION"
-
-                fi
-
-                echo "Removing failed application container..."
-
-                if docker ps -a --format '{{.Names}}' | grep -q '^ecr-app$'; then
-
-                    docker stop ecr-app || true
-
-                    docker rm ecr-app || true
-
-                fi
-
-                echo "Starting rollback container..."
-
-                docker run -d \
-                    --name ecr-app \
-                    -p 127.0.0.1:8081:80 \
-                    "$ECR_URI:$PREVIOUS_VERSION"
-
-                echo "Waiting for rollback application..."
-
-                sleep 5
-
-                echo "Checking rollback container..."
-
-                if ! docker ps --format '{{.Names}}' | grep -q '^ecr-app$'; then
-
-                    echo "Rollback container failed to start."
-                    exit 1
-
-                fi
-
-                echo "Testing rollback application on port 8081..."
-
-                if ! curl -f http://127.0.0.1:8081/; then
-
-                    echo "Rollback application health check FAILED."
-                    exit 1
-
-                fi
-
-                echo "Testing rollback production endpoint through Nginx..."
-
-                if ! curl -f http://localhost/; then
-
-                    echo "Rollback production health check FAILED."
-                    exit 1
-
-                fi
-
-                echo "=========================================="
-                echo "AUTOMATIC ROLLBACK COMPLETED SUCCESSFULLY"
-                echo "Rollback version: ${PREVIOUS_VERSION}"
-                echo "=========================================="
+                echo "Failure/rollback SNS notification sent."
             '''
         }
 
         success {
             echo 'Jenkins CI/CD pipeline completed successfully.'
+
+            sh '''
+                set -e
+
+                echo "Sending Jenkins success notification..."
+
+                GIT_COMMIT_ID=$(git rev-parse HEAD 2>/dev/null || echo "Unavailable")
+
+                ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+                ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
+
+                VERSION="build-${BUILD_NUMBER}"
+
+                IMAGE_DIGEST=$(docker inspect \
+                    "$ECR_URI:$VERSION" \
+                    --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "Unavailable")
+
+                aws sns publish \
+                    --topic-arn "$SNS_TOPIC_ARN" \
+                    --subject "SUCCESS - Hybrid Cloud DevOps POC - Build #${BUILD_NUMBER}" \
+                    --message "Hybrid Cloud DevOps POC deployment completed successfully.
+
+Jenkins Build: #${BUILD_NUMBER}
+Git Commit: ${GIT_COMMIT_ID}
+ECR Image: ${VERSION}
+ECR Image Digest: ${IMAGE_DIGEST}
+Status: SUCCESS
+Deployment Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+Jenkins URL: ${BUILD_URL}" \
+                    --region ap-south-1
+
+                echo "Success SNS notification sent."
+            '''
         }
 
         always {
