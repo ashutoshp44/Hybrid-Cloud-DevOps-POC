@@ -270,7 +270,7 @@ pipeline {
 
                     echo "Checking Docker application on port 8081..."
 
-                    curl -f http://127.0.0.1:8081/
+                    curl -f http://127.0.0.1:9999/
 
                     echo "Docker application health check passed."
 
