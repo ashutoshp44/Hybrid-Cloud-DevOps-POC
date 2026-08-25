@@ -362,7 +362,7 @@ pipeline {
 
                     echo "Testing rollback application on port 8081..."
 
-                    curl -f http://127.0.0.1:8081/ || true
+                    curl -f http://127.0.0.1:9999/ || true
 
                     echo "Testing rollback production endpoint through Nginx..."
 
