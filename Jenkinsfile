@@ -365,11 +365,11 @@ pipeline {
 
                     echo "Testing rollback application on port 8081..."
 
-                    curl -f http://127.0.0.1:8081/ || true
+                    curl -f --max-time 10 http://127.0.0.1:8081/ || exit 1
 
                     echo "Testing rollback production endpoint through Nginx..."
 
-                    curl -f http://localhost/ || true
+                    curl -f --max-time 10 http://localhost/ || exit 1
 
                     echo "=========================================="
                     echo "AUTOMATIC ROLLBACK COMPLETED"
