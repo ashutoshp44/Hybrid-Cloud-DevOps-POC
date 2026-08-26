@@ -136,9 +136,12 @@ pipeline {
 
                     echo "ECR Repository       : ${ECR_URI}"
 
-                    IMAGE_DIGEST=$(docker inspect \
-                        "$ECR_URI:$VERSION" \
-                        --format '{{index .RepoDigests 0}}' 2>/dev/null || true)
+                    IMAGE_DIGEST=$(aws ecr describe-images \
+                        --repository-name "hybrid-cloud-devops-poc" \
+                        --image-ids imageTag="$VERSION" \
+                        --region ap-south-1 \
+                        --query 'imageDetails[0].imageDigest' \
+                        --output text)
 
                     echo "ECR Image Digest     : ${IMAGE_DIGEST}"
 
@@ -362,7 +365,7 @@ pipeline {
 
                     echo "Testing rollback application on port 8081..."
 
-                    curl -f http://127.0.0.1:9999/ || true
+                    curl -f http://127.0.0.1:8081/ || true
 
                     echo "Testing rollback production endpoint through Nginx..."
 
@@ -414,9 +417,12 @@ Jenkins URL: ${BUILD_URL}" \
 
                 VERSION="build-${BUILD_NUMBER}"
 
-                IMAGE_DIGEST=$(docker inspect \
-                    "$ECR_URI:$VERSION" \
-                    --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "Unavailable")
+                IMAGE_DIGEST=$(aws ecr describe-images \
+                    --repository-name "hybrid-cloud-devops-poc" \
+                    --image-ids imageTag="$VERSION" \
+                    --region ap-south-1 \
+                    --query 'imageDetails[0].imageDigest' \
+                    --output text)
 
                 aws sns publish \
                     --topic-arn "$SNS_TOPIC_ARN" \
