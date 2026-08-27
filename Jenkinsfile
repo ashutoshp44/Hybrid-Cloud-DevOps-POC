@@ -250,9 +250,34 @@ pipeline {
                         -p 127.0.0.1:8081:80 \
                         "$ECR_URI:$VERSION"
 
-                    echo "Waiting for application to start..."
+                    echo "Waiting for Docker container to become healthy..."
 
-                    sleep 5
+                    for i in {1..12}; do
+                        HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' ecr-app 2>/dev/null || echo "unknown")
+                        echo "Docker health status: ${HEALTH_STATUS} (attempt ${i}/12)"
+
+                        if [ "${HEALTH_STATUS}" = "healthy" ]; then
+                            echo "Docker container is healthy."
+                            break
+                        fi
+
+                        if [ "${HEALTH_STATUS}" = "unhealthy" ]; then
+                            echo "Docker container is unhealthy."
+                            docker logs ecr-app || true
+                            exit 1
+                        fi
+
+                        sleep 5
+                    done
+
+                    FINAL_HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' ecr-app 2>/dev/null || echo "unknown")
+
+                    if [ "${FINAL_HEALTH_STATUS}" != "healthy" ]; then
+                        echo "Docker container did not become healthy within the timeout."
+                        docker ps -a --filter "name=ecr-app"
+                        docker logs ecr-app || true
+                        exit 1
+                    fi
 
                     echo "Checking Docker container status..."
 
