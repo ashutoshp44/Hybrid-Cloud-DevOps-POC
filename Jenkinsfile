@@ -281,6 +281,26 @@ pipeline {
                     curl -f http://localhost/
 
                     echo "Production application verification successful."
+                    echo "Updating Last Known Good deployment state..."
+
+                    VERSION="build-${BUILD_NUMBER}"
+
+                    ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+
+                    IMAGE_DIGEST=$(aws ecr describe-images \
+                        --repository-name "hybrid-cloud-devops-poc" \
+                        --image-ids imageTag="$VERSION" \
+                        --region ap-south-1 \
+                        --query 'imageDetails[0].imageDigest' \
+                        --output text)
+
+                    echo "LKG Version: ${VERSION}"
+                    echo "LKG Digest: ${IMAGE_DIGEST}"
+
+                    echo "${VERSION}" > /var/lib/jenkins/lkg/last-known-good
+                    echo "${IMAGE_DIGEST}" > /var/lib/jenkins/lkg/last-known-good-digest
+
+                    echo "Last Known Good state updated successfully."
                 '''
             }
         }
