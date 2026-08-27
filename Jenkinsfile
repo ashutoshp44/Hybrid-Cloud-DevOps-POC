@@ -5,7 +5,6 @@ pipeline {
         APP_NAME = 'hybrid-cloud-devops-poc'
         BUILD_DIR = 'build'
         PACKAGE_NAME = 'application.tar.gz'
-        SNS_TOPIC_ARN = 'arn:aws:sns:ap-south-1:811320358992:Alert'
     }
 
     stages {
@@ -377,28 +376,7 @@ pipeline {
                     echo "=========================================="
 
                 fi
-
-                echo "Sending Jenkins failure/rollback notification..."
-
-                GIT_COMMIT_ID=$(git rev-parse HEAD 2>/dev/null || echo "Unavailable")
-
-                aws sns publish \
-                    --topic-arn "$SNS_TOPIC_ARN" \
-                    --subject "FAILURE / ROLLBACK - Hybrid Cloud DevOps POC - Build #${BUILD_NUMBER}" \
-                    --message "Hybrid Cloud DevOps POC pipeline failed.
-
-Jenkins Build: #${BUILD_NUMBER}
-Git Commit: ${GIT_COMMIT_ID}
-Failed ECR Image: build-${BUILD_NUMBER}
-Rollback Target: build-${PREVIOUS_BUILD}
-Status: FAILURE
-Rollback: Attempted automatically
-Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-Jenkins URL: ${BUILD_URL}" \
-                    --region ap-south-1
-
-                echo "Failure/rollback SNS notification sent."
-            '''
+'''
         }
 
         success {
@@ -423,22 +401,6 @@ Jenkins URL: ${BUILD_URL}" \
                     --region ap-south-1 \
                     --query 'imageDetails[0].imageDigest' \
                     --output text)
-
-                aws sns publish \
-                    --topic-arn "$SNS_TOPIC_ARN" \
-                    --subject "SUCCESS - Hybrid Cloud DevOps POC - Build #${BUILD_NUMBER}" \
-                    --message "Hybrid Cloud DevOps POC deployment completed successfully.
-
-Jenkins Build: #${BUILD_NUMBER}
-Git Commit: ${GIT_COMMIT_ID}
-ECR Image: ${VERSION}
-ECR Image Digest: ${IMAGE_DIGEST}
-Status: SUCCESS
-Deployment Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-Jenkins URL: ${BUILD_URL}" \
-                    --region ap-south-1
-
-                echo "Success SNS notification sent."
             '''
         }
 
