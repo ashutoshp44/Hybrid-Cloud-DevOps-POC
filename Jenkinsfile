@@ -310,6 +310,15 @@ pipeline {
             }
         }
     }
+        stage('Controlled Rollback Test') {
+            steps {
+                sh '''
+                    echo 'INTENTIONAL FAILURE: Testing automatic rollback...'
+                    exit 1
+                '''
+            }
+        }
+
 
     post {
 
