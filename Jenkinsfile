@@ -426,6 +426,16 @@ pipeline {
                     --region ap-south-1 \
                     --query 'imageDetails[0].imageDigest' \
                     --output text)
+
+                echo "Updating Last Known Good deployment state..."
+
+                sudo mkdir -p /var/lib/jenkins/lkg
+                echo "${VERSION}" | sudo tee /var/lib/jenkins/lkg/last-known-good > /dev/null
+                echo "${IMAGE_DIGEST}" | sudo tee /var/lib/jenkins/lkg/last-known-good-digest > /dev/null
+                sudo chown jenkins:jenkins /var/lib/jenkins/lkg/last-known-good /var/lib/jenkins/lkg/last-known-good-digest
+
+                echo "Last Known Good updated: ${VERSION}"
+                echo "Last Known Good digest: ${IMAGE_DIGEST}"
             '''
         }
 
