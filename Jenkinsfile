@@ -324,18 +324,22 @@ pipeline {
                 ECR_URI="$ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/hybrid-cloud-devops-poc"
 
                 CURRENT_BUILD="${BUILD_NUMBER}"
-                PREVIOUS_BUILD=$((CURRENT_BUILD - 1))
 
-                PREVIOUS_VERSION="build-${PREVIOUS_BUILD}"
+                LKG_VERSION=$(cat /var/lib/jenkins/lkg/last-known-good 2>/dev/null || true)
+                LKG_DIGEST=$(cat /var/lib/jenkins/lkg/last-known-good-digest 2>/dev/null || true)
 
                 echo "Current failed build: ${CURRENT_BUILD}"
+                echo "Last Known Good version: ${LKG_VERSION}"
+                echo "Last Known Good digest: ${LKG_DIGEST}"
+
+                if [ -z "${LKG_VERSION}" ] || [ -z "${LKG_DIGEST}" ]; then
+                    echo "ERROR: Last Known Good deployment state is unavailable."
+                    exit 1
+                fi
+
+                PREVIOUS_VERSION="${LKG_VERSION}"
+
                 echo "Rollback target: ${PREVIOUS_VERSION}"
-
-                if [ "${PREVIOUS_BUILD}" -lt 1 ]; then
-
-                    echo "No previous build available for rollback."
-
-                else
 
                     echo "Logging in to Amazon ECR..."
 
