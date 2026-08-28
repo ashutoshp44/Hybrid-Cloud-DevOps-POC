@@ -403,8 +403,6 @@ pipeline {
                     echo "AUTOMATIC ROLLBACK COMPLETED"
                     echo "Rollback version: ${PREVIOUS_VERSION}"
                     echo "=========================================="
-
-                fi
 '''
         }
 
