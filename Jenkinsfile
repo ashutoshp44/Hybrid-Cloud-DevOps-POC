@@ -294,6 +294,20 @@ pipeline {
             }
         }
 
+        stage('Kubernetes Health Check') {
+            steps {
+                echo 'Running Kubernetes health check...'
+
+                sh '''
+                    set -e
+
+                    chmod +x k8s-health-check.sh
+
+                    ./k8s-health-check.sh
+                '''
+            }
+        }
+
         stage('Verify') {
             steps {
                 echo 'Verifying Docker application and production endpoint...'
