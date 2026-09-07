@@ -301,7 +301,6 @@ pipeline {
                 sh '''
                     set -e
 
-                    chmod +x k8s-health-check.sh
 
                     ./k8s-health-check.sh
                 '''
